@@ -3,11 +3,10 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   request: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
 
-  // 1. Get Problem
   const { data: problem, error: problemError } = await supabase
     .from("problems")
     .select("*")
@@ -17,12 +16,11 @@ export async function GET(
   if (problemError)
     return NextResponse.json({ error: "Problem not found" }, { status: 404 });
 
-  // 2. Get PUBLIC Test Cases (Security Filter)
   const { data: testCases, error: testError } = await supabase
     .from("test_cases")
     .select("input, expected_output")
     .eq("problem_id", problem.id)
-    .eq("is_hidden", false); // CRITICAL: Only fetch public tests
+    .eq("is_hidden", false);
 
   return NextResponse.json({
     problem,
