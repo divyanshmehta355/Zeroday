@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Editor from "@monaco-editor/react";
 import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import {
   Play,
   Loader2,
@@ -14,7 +16,9 @@ import {
   FileText,
   History,
   RefreshCcw,
+  Settings,
 } from "lucide-react";
+import { SettingsModal, type EditorSettings } from "./SettingsModal";
 
 const LANGUAGES = [
   { id: "python", name: "Python" },
@@ -44,18 +48,23 @@ interface WorkspaceProps {
 }
 
 export function Workspace({ problem }: WorkspaceProps) {
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState<EditorSettings>({
+    fontSize: 14,
+    theme: "vs-dark",
+    fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+  });
+
   const [language, setLanguage] = useState("python");
   const [code, setCode] = useState(problem.starter_code?.python || "");
+  const [customInput, setCustomInput] = useState("");
+  const [output, setOutput] = useState<string>("");
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
 
   const [activeTab, setActiveTab] = useState<"input" | "output">("input");
   const [leftTab, setLeftTab] = useState<"description" | "submissions">(
     "description"
   );
-
-  const [customInput, setCustomInput] = useState("");
-  const [output, setOutput] = useState<string>("");
-
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
 
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,6 +72,36 @@ export function Workspace({ problem }: WorkspaceProps) {
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
   const cleanDescription = problem.description.replace(/\\n/g, "\n");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("zeroday-settings");
+    if (saved) {
+      try {
+        setSettings(JSON.parse(saved));
+      } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          submitCode();
+        } else {
+          runCode();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [code, language, customInput]);
+
+  const updateSettings = (newSettings: EditorSettings) => {
+    setSettings(newSettings);
+    localStorage.setItem("zeroday-settings", JSON.stringify(newSettings));
+  };
 
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newLang = e.target.value;
@@ -86,6 +125,7 @@ export function Workspace({ problem }: WorkspaceProps) {
   };
 
   const runCode = async () => {
+    if (isRunning || isSubmitting) return;
     setIsRunning(true);
     setStatus("idle");
     setActiveTab("output");
@@ -116,6 +156,7 @@ export function Workspace({ problem }: WorkspaceProps) {
   };
 
   const submitCode = async () => {
+    if (isRunning || isSubmitting) return;
     setIsSubmitting(true);
     setStatus("idle");
     setActiveTab("output");
@@ -133,6 +174,7 @@ export function Workspace({ problem }: WorkspaceProps) {
       if (data.status === "Accepted") {
         setOutput("🎉 Accepted! All test cases passed.");
         setStatus("success");
+
         if (leftTab === "submissions") {
           const historyRes = await fetch(
             `/api/problems/${problem.slug}/submissions`
@@ -163,7 +205,16 @@ export function Workspace({ problem }: WorkspaceProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 h-[calc(100vh-64px)] bg-black text-white">
       {}
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        settings={settings}
+        setSettings={updateSettings}
+      />
+
+      {}
       <div className="border-r border-gray-800 bg-black flex flex-col h-full overflow-hidden">
+        {}
         <div className="flex border-b border-gray-800 bg-gray-900/50">
           <button
             onClick={() => setLeftTab("description")}
@@ -189,6 +240,7 @@ export function Workspace({ problem }: WorkspaceProps) {
           </button>
         </div>
 
+        {}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
           {leftTab === "description" ? (
             <>
@@ -209,8 +261,12 @@ export function Workspace({ problem }: WorkspaceProps) {
                   {problem.difficulty}
                 </span>
               </div>
+
+              {}
               <div className="prose prose-invert prose-p:text-gray-300 prose-headings:text-white max-w-none">
                 <ReactMarkdown
+                  remarkPlugins={[remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
                   components={{
                     h1: ({ node, ...props }) => (
                       <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />
@@ -285,6 +341,7 @@ export function Workspace({ problem }: WorkspaceProps) {
 
       {}
       <div className="flex flex-col h-full bg-[#1e1e1e] border-l border-gray-800">
+        {}
         <div className="h-14 border-b border-gray-800 bg-black/40 backdrop-blur flex items-center justify-between px-6">
           <div className="flex items-center gap-3">
             <select
@@ -299,11 +356,23 @@ export function Workspace({ problem }: WorkspaceProps) {
               ))}
             </select>
           </div>
+
           <div className="flex items-center gap-3">
+            {}
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-2 hover:bg-gray-800 text-gray-400 hover:text-white rounded-lg transition-colors"
+              title="Editor Settings"
+            >
+              <Settings size={18} />
+            </button>
+
+            {}
             <button
               onClick={runCode}
               disabled={isRunning || isSubmitting}
               className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+              title="Cmd + Enter"
             >
               {isRunning ? (
                 <Loader2 size={14} className="animate-spin" />
@@ -316,6 +385,7 @@ export function Workspace({ problem }: WorkspaceProps) {
               onClick={submitCode}
               disabled={isRunning || isSubmitting}
               className="flex items-center gap-2 px-5 py-2 bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-purple-900/20 disabled:opacity-50"
+              title="Cmd + Shift + Enter"
             >
               {isSubmitting ? (
                 <Loader2 size={14} className="animate-spin" />
@@ -327,21 +397,24 @@ export function Workspace({ problem }: WorkspaceProps) {
           </div>
         </div>
 
+        {}
         <div className="flex-1 relative">
           <Editor
             height="100%"
             language={language}
             value={code}
             onChange={(value) => setCode(value || "")}
-            theme="vs-dark"
+            theme={settings.theme}
             options={{
               minimap: { enabled: false },
-              fontSize: 14,
+              fontSize: settings.fontSize,
+              fontFamily: settings.fontFamily,
               padding: { top: 24 },
             }}
           />
         </div>
 
+        {}
         <div className="h-[250px] border-t border-gray-800 bg-[#111] flex flex-col">
           <div className="flex border-b border-gray-800">
             <button

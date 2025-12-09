@@ -1,5 +1,4 @@
 import { createClient } from "@/utils/supabase/server";
-import { Navbar } from "@/components/Navbar";
 import Image from "next/image";
 import { Trophy, Medal, Crown } from "lucide-react";
 
@@ -15,8 +14,6 @@ export default async function LeaderboardPage() {
 
   return (
     <div className="min-h-screen bg-black text-white selection:bg-purple-500/30">
-      <Navbar />
-
       <div className="max-w-4xl mx-auto px-6 py-20">
         <div className="text-center mb-16">
           <h1 className="text-5xl font-black tracking-tight mb-4 flex items-center justify-center gap-4">
@@ -32,6 +29,7 @@ export default async function LeaderboardPage() {
         </div>
 
         <div className="bg-[#111] border border-gray-800 rounded-2xl overflow-hidden shadow-2xl shadow-purple-900/10">
+          {}
           <div className="grid grid-cols-12 gap-4 p-4 border-b border-gray-800 bg-gray-900/50 text-xs font-bold uppercase tracking-wider text-gray-500">
             <div className="col-span-2 text-center">Rank</div>
             <div className="col-span-7">Engineer</div>
@@ -47,7 +45,7 @@ export default async function LeaderboardPage() {
                 {}
                 <div className="col-span-2 flex justify-center">
                   {index === 0 ? (
-                    <Trophy className="text-yellow-400 w-6 h-6" />
+                    <Trophy className="text-yellow-400 w-6 h-6 animate-pulse" />
                   ) : index === 1 ? (
                     <Medal className="text-gray-300 w-6 h-6" />
                   ) : index === 2 ? (
@@ -61,7 +59,11 @@ export default async function LeaderboardPage() {
 
                 {}
                 <div className="col-span-7 flex items-center gap-4">
-                  <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-700 group-hover:border-purple-500 transition-colors">
+                  <div
+                    className={`relative w-10 h-10 rounded-full overflow-hidden border border-gray-700 group-hover:border-purple-500 transition-colors
+                    ${index === 0 ? "ring-2 ring-yellow-500" : ""}
+                  `}
+                  >
                     <Image
                       src={user.avatar_url}
                       alt={user.username}
@@ -69,7 +71,15 @@ export default async function LeaderboardPage() {
                       className="object-cover"
                     />
                   </div>
-                  <span className="font-bold text-gray-200 group-hover:text-white transition-colors">
+                  <span
+                    className={`font-bold transition-colors
+                    ${
+                      index === 0
+                        ? "text-yellow-400"
+                        : "text-gray-200 group-hover:text-white"
+                    }
+                  `}
+                  >
                     {user.username}
                   </span>
                 </div>

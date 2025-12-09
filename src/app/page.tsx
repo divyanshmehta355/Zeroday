@@ -1,6 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
 
-import { Navbar } from "@/components/Navbar";
 import { ProblemCard } from "@/components/ProblemCard";
 
 export const dynamic = "force-dynamic";
@@ -30,8 +29,6 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-black text-white selection:bg-purple-500/30">
-      <Navbar />
-
       <div className="max-w-7xl mx-auto px-6 py-20">
         <div className="mb-16">
           <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-6">

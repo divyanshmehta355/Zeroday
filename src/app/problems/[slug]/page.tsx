@@ -1,6 +1,5 @@
 import { supabase } from "@/lib/supabase";
 import { Workspace } from "@/components/Workspace";
-import { Navbar } from "@/components/Navbar";
 import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +23,6 @@ export default async function ProblemPage({ params }: ProblemPageProps) {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <Navbar />
       <Workspace problem={problem} />
     </div>
   );
